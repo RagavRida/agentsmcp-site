@@ -222,12 +222,33 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Signup form state
+  // Auth modal state — covers Sign Up + Sign In flows from the nav.
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
+
+  // Sign Up state
   const [signupEmail, setSignupEmail] = useState("");
   const [signupKey, setSignupKey] = useState<string | null>(null);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signupLoading, setSignupLoading] = useState(false);
   const [keyCopied, setKeyCopied] = useState(false);
+
+  // Sign In state — paste an existing key, validate against /auth/me.
+  const [signinKey, setSigninKey] = useState("");
+  const [signinError, setSigninError] = useState<string | null>(null);
+  const [signinLoading, setSigninLoading] = useState(false);
+  const [signinUser, setSigninUser] = useState<{
+    email: string;
+    plan: string;
+    usage: {
+      agents: number;
+      maxAgents: number;
+      threads: number;
+      maxThreads: number;
+      messagesToday: number;
+      maxMessagesPerDay: number;
+    };
+  } | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -295,6 +316,64 @@ export default function App() {
     setSignupError(null);
     setSignupEmail("");
   };
+
+  const handleSignIn = async (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = signinKey.trim();
+    if (!trimmed || signinLoading) return;
+    if (!trimmed.startsWith("sk_live_")) {
+      setSigninError("Keys start with sk_live_ — check what you pasted.");
+      return;
+    }
+    setSigninError(null);
+    setSigninLoading(true);
+    try {
+      const res = await fetch(`${AGENTSMCP_API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${trimmed}` },
+      });
+      if (res.status === 401) {
+        setSigninError("Key is invalid or revoked. Sign up for a new one.");
+        return;
+      }
+      if (!res.ok) {
+        setSigninError(`Couldn't sign in (${res.status}). Try again.`);
+        return;
+      }
+      const data = await res.json();
+      setSigninUser({
+        email: data.email,
+        plan: data.plan,
+        usage: data.usage,
+      });
+    } catch {
+      setSigninError("Connection failed. Check your network and try again.");
+    } finally {
+      setSigninLoading(false);
+    }
+  };
+
+  const openAuthModal = (mode: "signup" | "signin") => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+    // Don't reset signup success state — user might want to copy the key
+    // again after closing. Only clear the sign-in scratchpad.
+    setSigninError(null);
+    setSignupError(null);
+  };
+
+  // ESC closes the modal.
+  useEffect(() => {
+    if (!authModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeAuthModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [authModalOpen]);
 
   // Interactive Sandbox state declarations
   const [sandboxPreset, setSandboxPreset] = useState<"stripe" | "db" | "react" | "custom">("stripe");
@@ -437,18 +516,34 @@ if (success) {
       
       {/* HEADER */}
       <header className="py-6 border-b border-[#262626]">
-        <div className="max-w-[1100px] mx-auto px-6 md:px-12 flex justify-between items-center" id="site-header">
+        <div className="max-w-[1100px] mx-auto px-6 md:px-12 flex justify-between items-center gap-4" id="site-header">
           <div className="flex items-center gap-2.5">
             <span className="font-semibold text-[#e5e5e5] tracking-tight text-base uppercase">AgentMailbox</span>
             <span className="text-[10px] font-mono border border-[#262626] bg-[#121212] px-1.5 py-0.5 rounded-xs text-[#22c55e]">v0.1.4</span>
           </div>
-          <div className="flex items-center gap-6 text-sm text-[#737373]">
-            <a href="https://github.com/RagavRida/agentsmcp" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition flex items-center gap-1">
+          <div className="flex items-center gap-3 sm:gap-5 text-sm text-[#737373]">
+            <a href="https://github.com/RagavRida/agentsmcp" target="_blank" rel="noopener noreferrer" className="hidden md:flex hover:text-[#e5e5e5] transition items-center gap-1">
               GitHub <ExternalLink size={12} />
             </a>
-            <a href="https://www.npmjs.com/package/agentsmcp" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+            <a href="https://www.npmjs.com/package/agentsmcp" target="_blank" rel="noopener noreferrer" className="hidden md:inline hover:text-[#e5e5e5] transition">
               npm
             </a>
+            <button
+              type="button"
+              onClick={() => openAuthModal("signin")}
+              className="hover:text-[#e5e5e5] transition focus:outline-none"
+              id="nav-signin"
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal("signup")}
+              className="bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-3 py-1.5 text-sm font-medium rounded-[4px] focus:outline-none"
+              id="nav-signup"
+            >
+              Get API Key
+            </button>
           </div>
         </div>
       </header>
@@ -1389,151 +1484,6 @@ if (success) {
         </div>
       </section>
 
-      {/* 9b. SIGNUP / FREE API KEY SECTION */}
-      <section className="py-24 max-w-[1100px] mx-auto px-6 md:px-12 border-t border-[#171717]" id="section-signup">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-
-          <div className="lg:col-span-5 space-y-4">
-            <span className="text-[#525252] font-mono text-xs uppercase tracking-wider block">Free Cloud Tier</span>
-            <h2 className="text-2xl md:text-3xl font-medium tracking-tight text-[#e5e5e5]" id="signup-title">
-              Get your free API key.<br />No credit card.
-            </h2>
-            <p className="text-[#737373] text-sm leading-[1.6] max-w-md">
-              10 agents · 500 messages/day · 7-day retention. Hit a limit?
-              Self-host for unlimited — same code, MIT licensed.
-            </p>
-          </div>
-
-          <div className="lg:col-span-7">
-            <div className="bg-[#0d0d0d]/80 backdrop-blur-md border border-[#262626] rounded-[6px] p-6 md:p-8 space-y-5" id="signup-card">
-
-              {!signupKey ? (
-                <>
-                  <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-3" id="signup-form">
-                    <input
-                      id="signup-email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      disabled={signupLoading}
-                      className="flex-1 bg-[#0a0a0a] border border-[#262626] rounded-[4px] px-3 py-2.5 text-sm text-[#e5e5e5] placeholder:text-[#525252] focus:outline-none focus:border-[#22c55e]/50 focus:ring-1 focus:ring-[#22c55e]/30 transition disabled:opacity-50"
-                    />
-                    <button
-                      type="submit"
-                      disabled={signupLoading || !signupEmail.trim()}
-                      className="bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-5 py-2.5 text-sm font-medium rounded-[4px] flex items-center justify-center gap-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {signupLoading ? (
-                        <>
-                          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/>
-                            <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
-                          </svg>
-                          <span>Generating…</span>
-                        </>
-                      ) : (
-                        <>Get Free API Key</>
-                      )}
-                    </button>
-                  </form>
-
-                  {signupError && (
-                    <p className="text-sm text-[#ef4444] font-mono" id="signup-error">
-                      {signupError}
-                    </p>
-                  )}
-
-                  <p className="text-xs text-[#525252] font-mono">
-                    By signing up, you agree to the soft limits above. We email
-                    your key once — no marketing.
-                  </p>
-                </>
-              ) : (
-                <div className="space-y-4" id="signup-result">
-                  <div className="flex items-center gap-2 text-[#22c55e] font-mono text-xs uppercase tracking-wider">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    <span>Account created</span>
-                  </div>
-
-                  <p className="text-sm text-[#e5e5e5]">Your API key:</p>
-
-                  <div className="bg-[#0a0a0a] border border-[#22c55e]/50 rounded-[4px] p-3 flex items-center gap-2">
-                    <code className="font-mono text-xs md:text-sm text-[#22c55e] break-all flex-1">
-                      {signupKey}
-                    </code>
-                    <button
-                      onClick={handleCopyKey}
-                      className="shrink-0 bg-[#22c55e]/10 hover:bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30 rounded-[4px] px-3 py-1.5 text-xs font-medium transition flex items-center gap-1.5 focus:outline-none"
-                      aria-label="Copy API key"
-                    >
-                      {keyCopied ? (
-                        <>
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                          <span>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                          </svg>
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-[#f59e0b] font-mono flex items-center gap-1.5">
-                    <span>⚠️</span>
-                    <span>Save this key — it won't be shown again.</span>
-                  </p>
-
-                  <div className="border-t border-[#262626] pt-4 space-y-2">
-                    <p className="text-xs text-[#737373] font-mono uppercase tracking-wider">Next steps</p>
-                    <ul className="text-sm text-[#a3a3a3] space-y-1.5">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#22c55e]">→</span>
-                        <a href="https://github.com/RagavRida/agentsmcp#cursor" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
-                          Cursor — paste into MCP settings
-                        </a>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#22c55e]">→</span>
-                        <a href="https://github.com/RagavRida/agentsmcp#claude-desktop" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
-                          Claude Desktop — edit claude_desktop_config.json
-                        </a>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#22c55e]">→</span>
-                        <a href="https://github.com/RagavRida/agentsmcp#python" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
-                          Python / TypeScript SDK
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <button
-                    onClick={resetSignup}
-                    className="text-xs text-[#525252] font-mono hover:text-[#737373] transition focus:outline-none"
-                  >
-                    Register another account →
-                  </button>
-                </div>
-              )}
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
       {/* 10. OPEN SOURCE SECTION */}
       <section className="py-24 max-w-[1100px] mx-auto px-6 md:px-12 border-t border-[#171717]" id="section-open-source">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -1641,6 +1591,292 @@ if (success) {
           </div>
         </div>
       </footer>
+
+      {/* AUTH MODAL — triggered from nav (Sign in / Get API Key) */}
+      {authModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeAuthModal();
+          }}
+        >
+          <div className="relative w-full max-w-md bg-[#0d0d0d] border border-[#262626] rounded-[6px] shadow-2xl shadow-black/40 p-6 md:p-8" id="auth-modal">
+
+            {/* Close X */}
+            <button
+              type="button"
+              onClick={closeAuthModal}
+              className="absolute top-4 right-4 text-[#525252] hover:text-[#e5e5e5] transition focus:outline-none"
+              aria-label="Close"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mb-6 border-b border-[#262626] -mx-6 md:-mx-8 px-6 md:px-8" id="auth-tabs">
+              <button
+                type="button"
+                onClick={() => setAuthMode("signup")}
+                className={`px-3 py-2 text-sm font-medium transition border-b-2 focus:outline-none ${
+                  authMode === "signup"
+                    ? "text-[#e5e5e5] border-[#22c55e]"
+                    : "text-[#737373] border-transparent hover:text-[#a3a3a3]"
+                }`}
+              >
+                Sign up
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode("signin")}
+                className={`px-3 py-2 text-sm font-medium transition border-b-2 focus:outline-none ${
+                  authMode === "signin"
+                    ? "text-[#e5e5e5] border-[#22c55e]"
+                    : "text-[#737373] border-transparent hover:text-[#a3a3a3]"
+                }`}
+              >
+                Sign in
+              </button>
+            </div>
+
+            {authMode === "signup" ? (
+              !signupKey ? (
+                <>
+                  <h2 id="auth-modal-title" className="text-xl font-medium tracking-tight text-[#e5e5e5] mb-2">
+                    Get your free API key
+                  </h2>
+                  <p className="text-sm text-[#737373] mb-5">
+                    No credit card. 10 agents · 500 messages/day · 7-day retention.
+                  </p>
+                  <form onSubmit={handleSignup} className="space-y-3" id="signup-form">
+                    <input
+                      id="signup-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      disabled={signupLoading}
+                      autoFocus
+                      className="w-full bg-[#0a0a0a] border border-[#262626] rounded-[4px] px-3 py-2.5 text-sm text-[#e5e5e5] placeholder:text-[#525252] focus:outline-none focus:border-[#22c55e]/50 focus:ring-1 focus:ring-[#22c55e]/30 transition disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={signupLoading || !signupEmail.trim()}
+                      className="w-full bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-5 py-2.5 text-sm font-medium rounded-[4px] flex items-center justify-center gap-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {signupLoading ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/>
+                            <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+                          </svg>
+                          <span>Generating…</span>
+                        </>
+                      ) : (
+                        <>Get Free API Key</>
+                      )}
+                    </button>
+                  </form>
+                  {signupError && (
+                    <p className="mt-3 text-sm text-[#ef4444] font-mono" id="signup-error">
+                      {signupError}
+                    </p>
+                  )}
+                  <p className="mt-4 text-xs text-[#525252] font-mono">
+                    We email your key once — no marketing.
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-4" id="signup-result">
+                  <div className="flex items-center gap-2 text-[#22c55e] font-mono text-xs uppercase tracking-wider">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Account created</span>
+                  </div>
+                  <p className="text-sm text-[#e5e5e5]">Your API key:</p>
+                  <div className="bg-[#0a0a0a] border border-[#22c55e]/50 rounded-[4px] p-3 flex items-center gap-2">
+                    <code className="font-mono text-xs text-[#22c55e] break-all flex-1">
+                      {signupKey}
+                    </code>
+                    <button
+                      onClick={handleCopyKey}
+                      className="shrink-0 bg-[#22c55e]/10 hover:bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30 rounded-[4px] px-3 py-1.5 text-xs font-medium transition flex items-center gap-1.5 focus:outline-none"
+                      aria-label="Copy API key"
+                    >
+                      {keyCopied ? (
+                        <>
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                          </svg>
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#f59e0b] font-mono flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Save this key — it won't be shown again.</span>
+                  </p>
+                  <div className="border-t border-[#262626] pt-4 space-y-2">
+                    <p className="text-xs text-[#737373] font-mono uppercase tracking-wider">Next steps</p>
+                    <ul className="text-sm text-[#a3a3a3] space-y-1.5">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#cursor" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Cursor — paste into MCP settings
+                        </a>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#claude-desktop" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Claude Desktop — edit claude_desktop_config.json
+                        </a>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#python" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Python / TypeScript SDK
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  <button
+                    onClick={resetSignup}
+                    className="text-xs text-[#525252] font-mono hover:text-[#737373] transition focus:outline-none"
+                  >
+                    Register another account →
+                  </button>
+                </div>
+              )
+            ) : (
+              // ----- Sign In tab -----
+              !signinUser ? (
+                <>
+                  <h2 id="auth-modal-title" className="text-xl font-medium tracking-tight text-[#e5e5e5] mb-2">
+                    Sign in with your API key
+                  </h2>
+                  <p className="text-sm text-[#737373] mb-5">
+                    Paste your <code className="font-mono text-[#22c55e]">sk_live_</code> key to view your account and usage.
+                  </p>
+                  <form onSubmit={handleSignIn} className="space-y-3" id="signin-form">
+                    <input
+                      id="signin-key"
+                      type="password"
+                      required
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="sk_live_..."
+                      value={signinKey}
+                      onChange={(e) => setSigninKey(e.target.value)}
+                      disabled={signinLoading}
+                      autoFocus
+                      className="w-full font-mono bg-[#0a0a0a] border border-[#262626] rounded-[4px] px-3 py-2.5 text-sm text-[#e5e5e5] placeholder:text-[#525252] focus:outline-none focus:border-[#22c55e]/50 focus:ring-1 focus:ring-[#22c55e]/30 transition disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={signinLoading || !signinKey.trim()}
+                      className="w-full bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-5 py-2.5 text-sm font-medium rounded-[4px] flex items-center justify-center gap-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {signinLoading ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/>
+                            <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+                          </svg>
+                          <span>Verifying…</span>
+                        </>
+                      ) : (
+                        <>Sign in</>
+                      )}
+                    </button>
+                  </form>
+                  {signinError && (
+                    <p className="mt-3 text-sm text-[#ef4444] font-mono" id="signin-error">
+                      {signinError}
+                    </p>
+                  )}
+                  <p className="mt-4 text-xs text-[#525252] font-mono">
+                    Lost your key? Switch to <button type="button" onClick={() => setAuthMode("signup")} className="text-[#22c55e] hover:underline focus:outline-none">Sign up</button> and register a new account.
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-4" id="signin-result">
+                  <div className="flex items-center gap-2 text-[#22c55e] font-mono text-xs uppercase tracking-wider">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Signed in</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-[#e5e5e5]">{signinUser.email}</p>
+                    <p className="text-xs text-[#737373] font-mono uppercase tracking-wider">{signinUser.plan} plan</p>
+                  </div>
+
+                  <div className="border-t border-[#262626] pt-4 grid grid-cols-3 gap-3 text-xs">
+                    <div className="space-y-1">
+                      <p className="text-[#737373] font-mono uppercase">Agents</p>
+                      <p className="text-[#e5e5e5] font-medium">
+                        {signinUser.usage.agents}
+                        <span className="text-[#525252]"> / {signinUser.usage.maxAgents}</span>
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[#737373] font-mono uppercase">Threads</p>
+                      <p className="text-[#e5e5e5] font-medium">
+                        {signinUser.usage.threads}
+                        <span className="text-[#525252]"> / {signinUser.usage.maxThreads}</span>
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[#737373] font-mono uppercase">Msgs today</p>
+                      <p className="text-[#e5e5e5] font-medium">
+                        {signinUser.usage.messagesToday}
+                        <span className="text-[#525252]"> / {signinUser.usage.maxMessagesPerDay}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-[#262626] pt-4 space-y-2">
+                    <p className="text-xs text-[#737373] font-mono uppercase tracking-wider">
+                      Thread dashboard
+                    </p>
+                    <p className="text-sm text-[#a3a3a3]">
+                      Visual view of your agents, threads, and messages is coming soon. For now your data lives behind the API.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSigninUser(null);
+                      setSigninKey("");
+                    }}
+                    className="text-xs text-[#525252] font-mono hover:text-[#737373] transition focus:outline-none"
+                  >
+                    Sign in with another key →
+                  </button>
+                </div>
+              )
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -551,14 +551,6 @@ if (success) {
               </a>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => openAuthModal("signin")}
-                  className="hidden sm:inline hover:text-[#e5e5e5] transition focus:outline-none"
-                  id="nav-signin"
-                >
-                  Sign in
-                </button>
                 <a
                   href={`${AGENTSMCP_API_BASE}/auth/github`}
                   className="inline-flex items-center gap-2 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-[#e5e5e5] px-3 py-1.5 rounded-[4px] text-sm font-medium transition"

@@ -124,96 +124,17 @@ const analyzeCustomQuery = (text: string) => {
 };
 
 const worksWithList = [
-  {
-    name: "Cursor",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Real Cursor Brand Style: Diagonal sleek arrow cursor with code split line */}
-        <path d="M19.43 12.98L7.14 4.14c-1.12-.8-2.6.01-2.6 1.4v12.87c0 .94 1.14 1.41 1.8 0.75l3.23-3.23 4.28 4.28c.39.39 1.02.39 1.41 0l2.83-2.83a1 1 0 0 0 0-1.41l-4.28-4.28 5.62-1.3c.78-.18.73-1.28-.02-1.4zM10.83 14L6.04 18.8V6.15l10.83 7.85-4.5 1.04a1 1 0 0 0-.66.66l-.88 3.35L10.83 14z" />
-      </svg>
-    )
-  },
-  {
-    name: "Claude Desktop",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Authentic Claude: 5-branched dandelion-like organic splat */}
-        <path d="M12 2C11.1 2 10.3 3.1 10.5 4.3c.1.9.8 1.6 1.5 2.1.8.5 1.5.5 2.1 0 .7-.5.9-1.3.6-2.1C14.3 3.1 13.1 2 12 2zm-5.4 3.1c-.8.5-1.2 1.8-.7 2.8.4.8 1.3 1.2 2.2 1.1s1.5-.7 1.6-1.5c.1-.8-.4-1.5-1.2-1.9-.9-.4-2-.1-2.1.2l.2.3zm10.8 0c-.2-.3-1.3-.6-2.1-.2-.8.4-1.3 1.1-1.2 1.9s.8 1.4 1.6 1.5 1.8-.3 2.2-1.1c.5-.9.1-2.2-.7-2.8zM4.3 10.5C3.1 10.3 2 11.1 2 12s1.1 1.7 2.3 1.5c.9-.1 1.6-.8 2.1-1.5.5-1 0-2.3-1-2.3-.3 0-.8.1-1.1.2zm15.4 0c-.3-.1-.8-.2-1.1-.2-1 0-1.5 1.3-1 2.3.5.7 1.2 1.4 2.1 1.5 1.2.2 2.3-.6 2.3-1.5s-1.1-1.7-2.3-1.5zM6.1 15.5c-.5-.8-1.8-1.2-2.8-.7-.8.4-1.2 1.3-1.1 2.2s.7 1.5 1.5 1.6c.8.1 1.5-.4 1.9-1.2.4-.9.1-2 .2-2.1l-.3-.12zm11.8 0l-.3.1c.1.1-.2 1.2.2 2.1.4.8 1.1 1.3 1.9 1.2s1.5-.7 1.6-1.5-.3-1.8-1.1-2.2c-.9-.5-2.2-.1-2.8.7H17.9zm-5.9 3c-1.1 0-2.3.9-2.1 2.1c.1 1.2 1.3 2 2.1 2s1.7-1.1 1.5-2.3c-.1-.9-.8-1.6-1.5-2.1a1.2 1.2 0 0 0-1 .3z" />
-      </svg>
-    )
-  },
-  {
-    name: "Antigravity",
-    icon: (
-      <svg className="w-4 h-4 text-[#22c55e] group-hover:text-[#e5e5e5] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Authentic Google Gemini: 4-pointed glowing stellar spark */}
-        <path d="M12 2C12 7.5 16.5 12 22 12C16.5 12 12 16.5 12 22C12 16.5 7.5 12 2 12C7.5 12 12 7.5 12 2Z" />
-      </svg>
-    )
-  },
-  {
-    name: "Claude Code",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {/* Custom Terminal prompt + Mini Spark */}
-        <polyline points="4 17 10 11 4 5" />
-        <line x1="12" y1="19" x2="20" y2="19" />
-        <path d="m19 4 1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" fill="currentColor" stroke="none" />
-      </svg>
-    )
-  },
-  {
-    name: "Continue",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Real Continue Ribbon Arrow symbol */}
-        <path d="M18.8 10L6.4 3.1A2.2 2.2 0 0 0 3 5.1v13.8a2.2 2.2 0 0 0 3.4 1.9l12.4-7a2.2 2.2 0 0 0 0-3.8zM5 16.9V7.1l8.7 4.9L5 16.9z" />
-        <path d="M21 4h2v16h-2z" />
-      </svg>
-    )
-  },
-  {
-    name: "Windsurf",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Real Codeium / Windsurf icon representation - curved sail nodes */}
-        <path d="M2.35 12c0-5.33 4.32-9.65 9.65-9.65s9.65 4.32 9.65 9.65-4.32 9.65-9.65 9.65c-2.8 0-5.33-1.2-7.1-3.15l1.42-1.42A7.6 7.6 0 0 0 12 19.65c4.22 0 7.65-3.43 7.65-7.65s-3.43-7.65-7.65-7.65S4.35 7.78 4.35 12c0 1.25.3 2.44.83 3.5l-1.63 1c-.78-1.37-1.2-2.93-1.2-4.5z" />
-        <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />
-      </svg>
-    )
-  },
-  {
-    name: "Cline",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {/* Real Cline robotic shield profile */}
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <circle cx="12" cy="11" r="3" />
-        <path d="M9 16c1-1 2-2 3-2s2 1 3 2" />
-      </svg>
-    )
-  },
-  {
-    name: "Codex",
-    icon: (
-      <svg className="w-4 h-4 text-[#737373] group-hover:text-[#22c55e] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Real OpenAI Codex / GPT Flower swirl logo */}
-        <path d="M20.2 12.2c-.3-.2-.5-.4-.8-.5.1-.3.1-.6.1-.9 0-.8-.3-1.6-.9-2.1-.5-.5-1.3-.8-2.1-.8l-1.1.1c0-.4-.1-.8-.3-1.1-.3-.6-.9-1.1-1.6-1.3-.7-.2-1.4-.1-2.1.2l-.9.5c-.3-.3-.6-.5-.9-.6A3.1 3.1 0 0 0 7.5 5a3 3 0 0 0-3 3c0 .3.1.6.1.9-.3.1-.5.3-.8.5A3 3 0 0 0 2.5 12a3 3 0 0 0 .9 2.1c.3.2.5.4.8.5-.1.3-.1.6-.1.9 0 .8.3 1.6.9 2.1.5.5 1.3.8 2.1.8l1.1-.1c0 .4.1.8.3 1.1.3.6.9 1.1 1.6 1.3.7.2 1.4.1 2.1-.2l.9-.5c.3.3.6.5.9.6.7.2 1.5.1 2.1-.2.7-.3 1.1-.9 1.3-1.6l.1-1.1c.4 0 .8.1 1.1.3.6.3 1.1.9 1.3 1.6.2.7.1 1.4-.2 2.1l-.5.9c.3.3.5.6.6.9.2.7.1 1.5-.2 2.1" opacity="0.15" />
-        <path d="M11.9 2c-3.2 0-5.8 2.6-5.8 5.8 0 .8.2 1.5.5 2.1l-.8.5c-.7.4-1.2 1-1.5 1.8s-.2 1.6.2 2.3l.8 1.4c-.6.2-1.1.6-1.5 1.1-.6.7-1 1.6-1 2.6 0 1.9 1.2 3.5 2.9 4.1l2.4-1.4c.5.5 1.2.9 1.9 1.1l-.4 2.8c1.3.4 2.7.4 4 0l-.4-2.8c.7-.2 1.4-.6 1.9-1.1l2.4 1.4c1.7-.6 2.9-2.2 2.9-4.1 0-1-.3-1.9-1-2.6-.4-.5-.9-.9-1.5-1.1l.8-1.4c.4-.7.5-1.5.2-2.3s-.8-1.4-1.5-1.8l-.8-.5c.3-.6.5-1.3.5-2.1C17.7 4.6 15.1 2 11.9 2zm0 1.5c2.4 0 4.3 1.9 4.3 4.3 0 .7-.2 1.3-.5 1.8l-.8-.5c-.6-.4-1.3-.6-2.1-.6H11V5.7h1.9l-.1.1v-.3H11V3.5h.9z" />
-      </svg>
-    )
-  },
-  {
-    name: "AMP",
-    icon: (
-      <svg className="w-4 h-4 text-[#22c55e] group-hover:text-[#e5e5e5] transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
-        {/* Authentic Envelope + Mailbox fast lightning bolt */}
-        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 2l-7 4.5L5 6h14zm1 12H4V8l8 5 8-5v10z" />
-        <path d="M11 9.5h2v3h-2zm-2.5 0h2v3h-2zm5 0h2v3h-2z" opacity="0.5" />
-      </svg>
-    )
-  }
+  "Cursor",
+  "Claude Desktop",
+  "Antigravity",
+  "Claude Code",
+  "Continue",
+  "Windsurf",
+  "Cline",
+  "Codex",
+  "AMP",
 ];
+
 
 const AGENTSMCP_API_BASE = "https://hdnxa5c8yr.us-east-1.awsapprunner.com";
 
@@ -626,20 +547,20 @@ if (success) {
               <div className="relative w-full overflow-hidden border border-[#262626] py-3 bg-[#121212]/20 rounded-[4px] select-none">
                 <div className="animate-marquee gap-8 md:gap-12">
                   {/* First iteration */}
-                  {worksWithList.map((item, idx) => (
-                    <div key={`stream1-${idx}`} className="flex items-center gap-2.5 group cursor-default shrink-0 pr-4">
-                      {item.icon}
-                      <span className="text-xs md:text-sm text-[#737373] group-hover:text-[#e5e5e5] transition-colors duration-200 font-mono tracking-tight font-medium">
-                        {item.name}
+                  {worksWithList.map((name, idx) => (
+                    <div key={`stream1-${idx}`} className="flex items-center gap-2 group cursor-default shrink-0 pr-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]/40 group-hover:bg-[#22c55e] transition-colors duration-200 shrink-0"></span>
+                      <span className="text-xs md:text-sm text-[#737373] group-hover:text-[#e5e5e5] transition-colors duration-200 font-mono tracking-tight font-medium whitespace-nowrap">
+                        {name}
                       </span>
                     </div>
                   ))}
                   {/* Second iteration to tile seamlessly */}
-                  {worksWithList.map((item, idx) => (
-                    <div key={`stream2-${idx}`} className="flex items-center gap-2.5 group cursor-default shrink-0 pr-4">
-                      {item.icon}
-                      <span className="text-xs md:text-sm text-[#737373] group-hover:text-[#e5e5e5] transition-colors duration-200 font-mono tracking-tight font-medium">
-                        {item.name}
+                  {worksWithList.map((name, idx) => (
+                    <div key={`stream2-${idx}`} className="flex items-center gap-2 group cursor-default shrink-0 pr-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]/40 group-hover:bg-[#22c55e] transition-colors duration-200 shrink-0"></span>
+                      <span className="text-xs md:text-sm text-[#737373] group-hover:text-[#e5e5e5] transition-colors duration-200 font-mono tracking-tight font-medium whitespace-nowrap">
+                        {name}
                       </span>
                     </div>
                   ))}

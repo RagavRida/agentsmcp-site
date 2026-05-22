@@ -3,5 +3,8 @@
   "rewrites": [
     { "source": "/dashboard/:path*", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" }
-  ]
+  ],
+  "ssoProtection": {
+    "deploymentType": "prod_deployment_urls_and_all_previews"
+  }
 }

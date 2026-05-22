@@ -217,6 +217,14 @@ const worksWithList = [
 
 const AGENTSMCP_API_BASE = "https://hdnxa5c8yr.us-east-1.awsapprunner.com";
 
+// Lightweight check at module load — true if a JWT is in localStorage. Used
+// to flip the nav between logged-out (GitHub button) and logged-in (avatar
+// + Dashboard link). Full validation happens on /dashboard via /auth/session.
+function readStoredSession(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(window.localStorage.getItem("agentsmcp_session"));
+}
+
 export default function App() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -225,6 +233,11 @@ export default function App() {
   // Auth modal state — covers Sign Up + Sign In flows from the nav.
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
+
+  // Logged-in session indicator (read on mount). The dashboard does its own
+  // /auth/session validation; here we just decide whether to show the nav's
+  // logged-in shape.
+  const [hasSession] = useState<boolean>(readStoredSession);
 
   // Sign Up state
   const [signupEmail, setSignupEmail] = useState("");
@@ -528,22 +541,37 @@ if (success) {
             <a href="https://www.npmjs.com/package/agentsmcp" target="_blank" rel="noopener noreferrer" className="hidden md:inline hover:text-[#e5e5e5] transition">
               npm
             </a>
-            <button
-              type="button"
-              onClick={() => openAuthModal("signin")}
-              className="hover:text-[#e5e5e5] transition focus:outline-none"
-              id="nav-signin"
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => openAuthModal("signup")}
-              className="bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-3 py-1.5 text-sm font-medium rounded-[4px] focus:outline-none"
-              id="nav-signup"
-            >
-              Get API Key
-            </button>
+            {hasSession ? (
+              <a
+                href="/dashboard"
+                className="bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-3 py-1.5 text-sm font-medium rounded-[4px] focus:outline-none"
+                id="nav-dashboard"
+              >
+                Dashboard
+              </a>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => openAuthModal("signin")}
+                  className="hidden sm:inline hover:text-[#e5e5e5] transition focus:outline-none"
+                  id="nav-signin"
+                >
+                  Sign in
+                </button>
+                <a
+                  href={`${AGENTSMCP_API_BASE}/auth/github`}
+                  className="inline-flex items-center gap-2 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-[#e5e5e5] px-3 py-1.5 rounded-[4px] text-sm font-medium transition"
+                  id="nav-github"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55v-2.13c-3.2.69-3.87-1.36-3.87-1.36-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.73-1.53-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .96-.31 3.15 1.18a10.97 10.97 0 015.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.26 5.69.41.36.78 1.06.78 2.13v3.16c0 .31.21.66.79.55C20.21 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Sign in with GitHub</span>
+                  <span className="sm:hidden">GitHub</span>
+                </a>
+              </>
+            )}
           </div>
         </div>
       </header>

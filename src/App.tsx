@@ -215,10 +215,19 @@ const worksWithList = [
   }
 ];
 
+const AGENTSMCP_API_BASE = "https://hdnxa5c8yr.us-east-1.awsapprunner.com";
+
 export default function App() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Signup form state
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupKey, setSignupKey] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [keyCopied, setKeyCopied] = useState(false);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -237,6 +246,54 @@ export default function App() {
         setIsSubscribed(false);
       }, 4000);
     }
+  };
+
+  const handleSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = signupEmail.trim();
+    if (!trimmed || signupLoading) return;
+    setSignupError(null);
+    setSignupLoading(true);
+    try {
+      const res = await fetch(`${AGENTSMCP_API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.apiKey) {
+        setSignupKey(data.apiKey);
+        setSignupEmail("");
+      } else {
+        const code = data?.error ?? "unknown_error";
+        const map: Record<string, string> = {
+          email_required: "Please enter your email address.",
+          invalid_email: "That email doesn't look right.",
+          email_already_registered:
+            "An account with this email already exists. Use a different one or recover your key.",
+          rate_limit_exceeded:
+            "Too many requests from this network — try again in a minute.",
+        };
+        setSignupError(map[code] ?? `Couldn't register: ${code}`);
+      }
+    } catch {
+      setSignupError("Connection failed. Check your network and try again.");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  const handleCopyKey = () => {
+    if (!signupKey) return;
+    navigator.clipboard.writeText(signupKey);
+    setKeyCopied(true);
+    setTimeout(() => setKeyCopied(false), 1500);
+  };
+
+  const resetSignup = () => {
+    setSignupKey(null);
+    setSignupError(null);
+    setSignupEmail("");
   };
 
   // Interactive Sandbox state declarations
@@ -1332,10 +1389,155 @@ if (success) {
         </div>
       </section>
 
+      {/* 9b. SIGNUP / FREE API KEY SECTION */}
+      <section className="py-24 max-w-[1100px] mx-auto px-6 md:px-12 border-t border-[#171717]" id="section-signup">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+
+          <div className="lg:col-span-5 space-y-4">
+            <span className="text-[#525252] font-mono text-xs uppercase tracking-wider block">Free Cloud Tier</span>
+            <h2 className="text-2xl md:text-3xl font-medium tracking-tight text-[#e5e5e5]" id="signup-title">
+              Get your free API key.<br />No credit card.
+            </h2>
+            <p className="text-[#737373] text-sm leading-[1.6] max-w-md">
+              10 agents · 500 messages/day · 7-day retention. Hit a limit?
+              Self-host for unlimited — same code, MIT licensed.
+            </p>
+          </div>
+
+          <div className="lg:col-span-7">
+            <div className="bg-[#0d0d0d]/80 backdrop-blur-md border border-[#262626] rounded-[6px] p-6 md:p-8 space-y-5" id="signup-card">
+
+              {!signupKey ? (
+                <>
+                  <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-3" id="signup-form">
+                    <input
+                      id="signup-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      disabled={signupLoading}
+                      className="flex-1 bg-[#0a0a0a] border border-[#262626] rounded-[4px] px-3 py-2.5 text-sm text-[#e5e5e5] placeholder:text-[#525252] focus:outline-none focus:border-[#22c55e]/50 focus:ring-1 focus:ring-[#22c55e]/30 transition disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={signupLoading || !signupEmail.trim()}
+                      className="bg-[#22c55e] text-[#0a0a0a] hover:bg-[#1faa53] transition px-5 py-2.5 text-sm font-medium rounded-[4px] flex items-center justify-center gap-2 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {signupLoading ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/>
+                            <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+                          </svg>
+                          <span>Generating…</span>
+                        </>
+                      ) : (
+                        <>Get Free API Key</>
+                      )}
+                    </button>
+                  </form>
+
+                  {signupError && (
+                    <p className="text-sm text-[#ef4444] font-mono" id="signup-error">
+                      {signupError}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-[#525252] font-mono">
+                    By signing up, you agree to the soft limits above. We email
+                    your key once — no marketing.
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-4" id="signup-result">
+                  <div className="flex items-center gap-2 text-[#22c55e] font-mono text-xs uppercase tracking-wider">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>Account created</span>
+                  </div>
+
+                  <p className="text-sm text-[#e5e5e5]">Your API key:</p>
+
+                  <div className="bg-[#0a0a0a] border border-[#22c55e]/50 rounded-[4px] p-3 flex items-center gap-2">
+                    <code className="font-mono text-xs md:text-sm text-[#22c55e] break-all flex-1">
+                      {signupKey}
+                    </code>
+                    <button
+                      onClick={handleCopyKey}
+                      className="shrink-0 bg-[#22c55e]/10 hover:bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30 rounded-[4px] px-3 py-1.5 text-xs font-medium transition flex items-center gap-1.5 focus:outline-none"
+                      aria-label="Copy API key"
+                    >
+                      {keyCopied ? (
+                        <>
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                          </svg>
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-[#f59e0b] font-mono flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Save this key — it won't be shown again.</span>
+                  </p>
+
+                  <div className="border-t border-[#262626] pt-4 space-y-2">
+                    <p className="text-xs text-[#737373] font-mono uppercase tracking-wider">Next steps</p>
+                    <ul className="text-sm text-[#a3a3a3] space-y-1.5">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#cursor" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Cursor — paste into MCP settings
+                        </a>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#claude-desktop" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Claude Desktop — edit claude_desktop_config.json
+                        </a>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#22c55e]">→</span>
+                        <a href="https://github.com/RagavRida/agentsmcp#python" target="_blank" rel="noopener noreferrer" className="hover:text-[#e5e5e5] transition">
+                          Python / TypeScript SDK
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={resetSignup}
+                    className="text-xs text-[#525252] font-mono hover:text-[#737373] transition focus:outline-none"
+                  >
+                    Register another account →
+                  </button>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* 10. OPEN SOURCE SECTION */}
       <section className="py-24 max-w-[1100px] mx-auto px-6 md:px-12 border-t border-[#171717]" id="section-open-source">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
+
           <div className="lg:col-span-5 space-y-4">
             <span className="text-[#525252] font-mono text-xs uppercase tracking-wider block">MIT License Structure</span>
             <h2 className="text-2xl md:text-3xl font-medium tracking-tight text-[#e5e5e5]" id="open-source-title">

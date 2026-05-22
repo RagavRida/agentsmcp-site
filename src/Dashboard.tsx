@@ -518,17 +518,22 @@ function KeysTab({
                       <button
                         onClick={() => onRevoke(k.id)}
                         disabled={revokingId === k.id}
-                        className="text-xs text-[#737373] hover:text-[#ef4444] transition font-mono disabled:opacity-50 focus:outline-none"
+                        className="text-xs text-[#737373] hover:text-[#ef4444] transition font-mono disabled:opacity-50 focus:outline-none cursor-pointer"
                       >
                         {revokingId === k.id ? "revoking…" : "revoke"}
                       </button>
                     ) : (
-                      <span
-                        className="text-xs text-[#404040] font-mono"
-                        title="Can't revoke your only key"
+                      <button
+                        onClick={() => {
+                          if (window.confirm("This is your only key. Revoke it? You can create a new one after.")) {
+                            onRevoke(k.id);
+                          }
+                        }}
+                        disabled={revokingId === k.id}
+                        className="text-xs text-[#737373] hover:text-[#ef4444] transition font-mono disabled:opacity-50 focus:outline-none cursor-pointer"
                       >
-                        revoke
-                      </span>
+                        {revokingId === k.id ? "revoking…" : "revoke"}
+                      </button>
                     )}
                   </td>
                 </tr>
